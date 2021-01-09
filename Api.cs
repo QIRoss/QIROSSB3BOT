@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Text.Json;
 
 namespace Stock
 {
@@ -13,7 +14,7 @@ namespace Stock
 
         public Api(string act,float buy, float sell, string key){
             url = key;
-            active = act;
+            active = act.ToUpper();
             toBuy = buy;
             toSell = sell;
         }
@@ -23,22 +24,21 @@ namespace Stock
             using (var response = request.GetResponse()){
                 var streamDados = response.GetResponseStream();
                 var reader = new StreamReader(streamDados ?? throw new InvalidOperationException());
-                object objResponse = reader.ReadToEnd();
-                Console.WriteLine(objResponse.ToString());
-                string[] parts = objResponse.ToString().Split(',');
-                for(int index=0;index<parts.Length;index++){
-                    string[] temp = parts[index].Split(':');
-                    if(string.CompareOrdinal("\"price\"",temp[0])==0){
-                        Console.WriteLine("Price: "+temp[1]);
-                        float price = float.Parse(temp[1]);
-                        if(price < toBuy)
-                            return -1;
-                        if(price > toSell)
-                            return 1;
-                    }
+                string objResponse = reader.ReadToEnd();
+                
+                objResponse = objResponse.Replace(active, "active");
+                Console.WriteLine(objResponse);
+                var activeObj = JsonSerializer.Deserialize<ApiResponse>(objResponse);
+                if (activeObj != null)
+                {
+                    double price = activeObj.results.active.price;
+                    streamDados.Close();
+                    response.Close();
+                    if (price < toBuy)
+                        return -1;
+                    if (price > toSell)
+                        return 1;
                 }
-                streamDados.Close();
-                response.Close();
                 return 0;
             }
         }

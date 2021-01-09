@@ -24,22 +24,28 @@ namespace Stock {
             var defaultBody = ConfigurationManager.AppSettings["defaultBody"];
             var onBuying = ConfigurationManager.AppSettings["bodyOnBuying"];
             var onSelling = ConfigurationManager.AppSettings["bodyOnSelling"];
-            var connection = new Api(arg[0],float.Parse(arg[1]),float.Parse(arg[2]),apiUrl);
-            var mail = new Mail(host,user,password,from,to,subject,defaultBody+'\n'+'\n');
             
+            var connection = new Api(arg[0],float.Parse(arg[1]),float.Parse(arg[2]),apiUrl);
+            var mail = new Mail(host, user, password, from, to, subject, defaultBody + '\n' + '\n');
+
             void OnTimedEvent(Object source, ElapsedEventArgs e) {
-                Console.WriteLine("The Elapsed event was raised at {0}", e.SignalTime);
-                int result = connection.GetPrice();
-                if (result != 0)
+                // Console.WriteLine("The Elapsed event was raised at {0}", e.SignalTime);
+                DateTime date = new DateTime();
+                if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday
+                    && date.Hour > 10 && date.Hour < 17)
                 {
-                    if (result < 0)
-                        mail.body += onBuying + arg[0];
-                    else
-                        mail.body += onSelling + arg[0];
-                    mail.SendMail();
+                    int result = connection.GetPrice();
+                    if (result != 0)
+                    {
+                        if (result < 0)
+                            mail.body += onBuying + arg[0];
+                        else
+                            mail.body += onSelling + arg[0];
+                        mail.SendMail();
+                    }
                 }
             }
-
+            
             _aTimer = new Timer {Interval = 300000};
             _aTimer.Elapsed += OnTimedEvent;
             _aTimer.AutoReset = true;
